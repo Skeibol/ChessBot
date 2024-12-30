@@ -905,7 +905,7 @@ static inline void generateMoves() {
                 // init source square
                 sourceSquare = getLSBIndex(bitboard);
 
-                attacks = getBishopAttacks(sourceSquare,occupancies[both]) & ~occupancies[side];
+                attacks = getBishopAttacks(sourceSquare, occupancies[both]) & ~occupancies[side];
 
                 // loop over target squares
                 while (attacks)
@@ -934,7 +934,7 @@ static inline void generateMoves() {
                 // init source square
                 sourceSquare = getLSBIndex(bitboard);
 
-                attacks = getRookAttacks(sourceSquare,occupancies[both]) & ~occupancies[side];
+                attacks = getRookAttacks(sourceSquare, occupancies[both]) & ~occupancies[side];
 
                 // loop over target squares
                 while (attacks)
@@ -963,7 +963,7 @@ static inline void generateMoves() {
                 // init source square
                 sourceSquare = getLSBIndex(bitboard);
 
-                attacks = getQueenAttacks(sourceSquare,occupancies[both]) & ~occupancies[side];
+                attacks = getQueenAttacks(sourceSquare, occupancies[both]) & ~occupancies[side];
 
                 // loop over target squares
                 while (attacks)
@@ -1117,7 +1117,6 @@ void parseFENString(char *FEN) {
         occupancies[black] |= bitboards[piece];
     }
     occupancies[both] = occupancies[white] | occupancies[black];
-    printf("\n%s", FEN);
 }
 
 void setGameStart() {
@@ -1201,13 +1200,53 @@ void printAttackedSquares(int side) {
 #define tricky_position "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 "
 #define killer_position "rnbqkb1r/pp1p1pPp/8/2p1pP2/1P1P4/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1"
 #define cmk_position "r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9 "
+/*
+ * Moves encoding binary
+ *
+ * - 0x3f     ==== 0000 0000 0000 0000 0011 1111 Source square - move = (move | square)
+ * - 0xfc0    ==== 0000 0000 0000 1111 1100 0000 Target square -  move = (move | square) << 6, getting the move back - (move & 0xfc0) >> 6
+ * - 0xf000   ==== 0000 0000 1111 0000 0000 0000 Piece - 12 pieces - move = (move | piece) << 12
+ * - 0xf0000  ==== 0000 1111 0000 0000 0000 0000 Promoted piece
+ * - 0x100000 ==== 0001 0000 0000 0000 0000 0000 Capture flag
+ * - 0x200000 ==== 0010 0000 0000 0000 0000 0000 Double push flag
+ * - 0x400000 ==== 0100 0000 0000 0000 0000 0000 Enpassant capture
+ * - 0x800000 ==== 1000 0000 0000 0000 0000 0000 Castling flag
+ *
+ *
+ */
+
+// define encode move macros
+#define move_encode(source, target, piece, promoted, capture, doublePush, enpassant, castle)\
+    (source) | (target << 6) | (piece) << 12 | (promoted) << 16 | (capture) << 20 | (doublePush) << 21 | (enpassant) << 22 | (castle) << 23;
+#define move_get_source(move) (move & 0x3f)
+#define move_get_target(move) ((move & 0xfc0) >> 6)
+#define move_get_piece(move) ((move & 0xf000) >> 12)
+#define move_get_promoted(move) ((move & 0xf0000) >> 16)
+#define move_get_capture(move) ((move & 0x100000) ? 1 : 0)
+#define move_get_doublepush(move) ((move & 0x200000) ? 1 : 0)
+#define move_get_enpassant(move) ((move & 0x400000) ? 1 : 0)
+#define move_get_castling(move) ((move & 0x800000) ? 1 : 0)
 
 int main(void) {
     init_all();
     parseFENString("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 ");
 
 
-    printBoard();
-    generateMoves();
+    // encode target square of h1
+
+    int move = move_encode(e7, e8, P, Q, 1, 1, 0, 0);
+
+    printf("source = %s ,target = %s ,piece = %c ,promoted = %c ,capture = %d ,doublepush = %d ,enpassant = %d, castling = %d\n",
+           square_to_coordinate[move_get_source(move)],
+           square_to_coordinate[move_get_target(move)],
+           ascii_pieces[move_get_piece(move)],
+           ascii_pieces[move_get_promoted(move)],
+           move_get_capture(move),
+           move_get_doublepush(move),
+           move_get_enpassant(move),
+           move_get_castling(move));
+    // printBitBoard(move,a1);
+    // printBoard();
+    // generateMoves();
     return 0;
 }
