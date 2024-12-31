@@ -1,6 +1,6 @@
 #ifndef UTILS_H
 #define UTILS_H
-
+#include <stdio.h>
 // Utility functions
 #define U64 unsigned long long
 // bit manipulation macros
