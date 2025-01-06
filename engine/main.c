@@ -1805,6 +1805,7 @@ void print_move_scores(moves *move_list) {
 }
 
 static inline int sortMoves(moves *moveList) {
+ 
     int moveScores[moveList->count];
 
     for (int count = 0; count < moveList->count; count++)
@@ -2170,7 +2171,7 @@ void uciLoop() {
 
 int main(void) {
     init_all();
-    int debug = 1;
+    int debug = 0;
     if (debug)
     {
         parseFENString(tricky_position);
